@@ -79,6 +79,7 @@ class _MyAppState extends State<MyApp> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
                   child: TextField(
+                    enabled: !apduAdded,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       hintText: 'Enter to send via NFC',
@@ -87,14 +88,9 @@ class _MyAppState extends State<MyApp> {
                   ),
                 ),
                 SizedBox(
-                  height: 200,
-                  width: 300,
-                  child: ElevatedButton(
-                    style: ButtonStyle(
-                      backgroundColor: MaterialStateProperty.all(
-                        apduAdded ? Colors.redAccent : Colors.greenAccent,
-                      ),
-                    ),
+                  height: 100.0,
+                  width: 500.0,
+                  child: ElevatedButton.icon(
                     onPressed: () async {
                       if (apduAdded == false) {
                         await NfcHce.addApduResponse(
@@ -105,18 +101,24 @@ class _MyAppState extends State<MyApp> {
 
                       setState(() => apduAdded = !apduAdded);
                     },
-                    child: FittedBox(
-                      child: Text(
-                        apduAdded
-                            ? 'remove\n$data\nfrom\nport $port'
-                            : 'add\n$data\nto\nport $port',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 26,
-                          color: apduAdded ? Colors.white : Colors.black,
-                        ),
-                      ),
-                    ),
+                    icon: !apduAdded
+                        ? const Icon(
+                            Icons.lock_open,
+                            size: 40,
+                          )
+                        : const Icon(
+                            Icons.lock,
+                            size: 40,
+                          ),
+                    label: !apduAdded
+                        ? const Text(
+                            "Unlock",
+                            style: TextStyle(fontSize: 20),
+                          )
+                        : const Text(
+                            "Lock",
+                            style: TextStyle(fontSize: 20),
+                          ),
                   ),
                 ),
                 if (nfcApduCommand != null)
