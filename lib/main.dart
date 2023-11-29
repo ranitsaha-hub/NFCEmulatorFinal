@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 import "dart:convert";
+import 'package:aad_oauth/aad_oauth.dart';
+import 'package:aad_oauth/model/config.dart';
 import 'package:flutter/material.dart';
 import 'package:nfc_host_card_emulation/nfc_host_card_emulation.dart';
 
@@ -65,6 +67,19 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    var navigatorKey = GlobalKey<NavigatorState>();
+
+    Config config = Config(
+      tenant: "ddbaf2cd-efd8-4f1b-8580-cca059c9a6cb",
+      clientId: "2f44aedb-6924-4ef4-932b-2f5bddf78dcf",
+      scope: "openid profile offline_access",
+      redirectUri: "msauth://nfc_emulator/M%2BgDaV1h2ms2kbe4tXumTHigw3Q%3D",
+      navigatorKey: navigatorKey,
+      webUseRedirect: true,
+      loader: const Center(child: CircularProgressIndicator()),
+    );
+
+    AadOAuth oauth = AadOAuth(config);
     final body = _nfcState == NfcState.enabled
         ? Center(
             child: Column(
@@ -93,8 +108,20 @@ class _MyAppState extends State<MyApp> {
                   child: ElevatedButton.icon(
                     onPressed: () async {
                       if (apduAdded == false) {
+                        final result = await oauth.login();
+                        result.fold(
+                          (failure) => () {
+                            print(failure.toString());
+                          },
+                          (token) => () {
+                            print(
+                                'Logged in successfully, your access token: $token');
+                          },
+                        );
+                        String? accessToken = await oauth.getAccessToken();
+                        print(accessToken);
                         await NfcHce.addApduResponse(
-                            port, utf8.encode(typedData));
+                            port, utf8.encode(accessToken!));
                       } else {
                         await NfcHce.removeApduResponse(port);
                       }
@@ -134,19 +161,26 @@ class _MyAppState extends State<MyApp> {
             ),
           )
         : Center(
-            child: Text(
-              'Oh no...\nNFC is ${_nfcState.name}',
-              style: const TextStyle(fontSize: 20),
-              textAlign: TextAlign.center,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Text(
+                  'Oh no...\nNFC is ${_nfcState.name}',
+                  style: const TextStyle(fontSize: 20),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
           );
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.green),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('NFC HCE example app'),
+          title: const Text('Door Unlock using NFC'),
         ),
         body: body,
       ),
