@@ -90,18 +90,18 @@ class _MyAppState extends State<MyApp> {
                   'NFC State is ${_nfcState.name}',
                   style: const TextStyle(fontSize: 20),
                 ),
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-                  child: TextField(
-                    enabled: !apduAdded,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: 'Enter to send via NFC',
-                    ),
-                    onChanged: onTypeTextInputField,
-                  ),
-                ),
+                // Padding(
+                //   padding:
+                //       const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+                //   child: TextField(
+                //     enabled: !apduAdded,
+                //     decoration: const InputDecoration(
+                //       border: OutlineInputBorder(),
+                //       hintText: 'Enter to send via NFC',
+                //     ),
+                //     onChanged: onTypeTextInputField,
+                //   ),
+                // ),
                 SizedBox(
                   height: 100.0,
                   width: 500.0,
