@@ -2,10 +2,25 @@ import 'dart:typed_data';
 import "dart:convert";
 import 'package:aad_oauth/aad_oauth.dart';
 import 'package:aad_oauth/model/config.dart';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:flutter/material.dart';
 import 'package:nfc_host_card_emulation/nfc_host_card_emulation.dart';
 
 late NfcState _nfcState;
+
+var navigatorKey = GlobalKey<NavigatorState>();
+
+Config config = Config(
+  tenant: "ddbaf2cd-efd8-4f1b-8580-cca059c9a6cb",
+  clientId: "2f44aedb-6924-4ef4-932b-2f5bddf78dcf",
+  scope: "openid email offline_access",
+  redirectUri: "msauth://nfc_emulator/M%2BgDaV1h2ms2kbe4tXumTHigw3Q%3D",
+  navigatorKey: navigatorKey,
+  webUseRedirect: true,
+  loader: const Center(child: CircularProgressIndicator()),
+);
+
+AadOAuth oauth = AadOAuth(config);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,21 +80,33 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  dynamic getToken() async {
+    final isUserLoggedin = await oauth.hasCachedAccountInformation;
+    if (!isUserLoggedin) {
+      final result = await oauth.login();
+      result.fold(
+        (failure) => () {
+          print(failure.toString());
+        },
+        (token) => () {
+          print('Logged in successfully, your access token: $token');
+        },
+      );
+    }
+    String? accessToken = await oauth.getAccessToken();
+    JWT decodedToken = JWT.decode(accessToken!);
+    dynamic newTokenRaw = {
+      'emailAddress': decodedToken.payload['unique_name'],
+      'appId': decodedToken.payload['appid'],
+      'userName': decodedToken.payload['name'],
+    };
+    String jwtToken = JWT(newTokenRaw).sign(SecretKey(
+        "5cCI6InVzZXIiLCJpcGFkZHIiOiIyMC4xOTcuMS44MyIsIm5hbWUiOiJSYW5pdCBTYWhh"));
+    return jwtToken;
+  }
+
   @override
   Widget build(BuildContext context) {
-    var navigatorKey = GlobalKey<NavigatorState>();
-
-    Config config = Config(
-      tenant: "ddbaf2cd-efd8-4f1b-8580-cca059c9a6cb",
-      clientId: "2f44aedb-6924-4ef4-932b-2f5bddf78dcf",
-      scope: "openid profile offline_access",
-      redirectUri: "msauth://nfc_emulator/M%2BgDaV1h2ms2kbe4tXumTHigw3Q%3D",
-      navigatorKey: navigatorKey,
-      webUseRedirect: true,
-      loader: const Center(child: CircularProgressIndicator()),
-    );
-
-    AadOAuth oauth = AadOAuth(config);
     final body = _nfcState == NfcState.enabled
         ? Center(
             child: Column(
@@ -108,18 +135,7 @@ class _MyAppState extends State<MyApp> {
                   child: ElevatedButton.icon(
                     onPressed: () async {
                       if (apduAdded == false) {
-                        final result = await oauth.login();
-                        result.fold(
-                          (failure) => () {
-                            print(failure.toString());
-                          },
-                          (token) => () {
-                            print(
-                                'Logged in successfully, your access token: $token');
-                          },
-                        );
-                        String? accessToken = await oauth.getAccessToken();
-                        print(accessToken);
+                        dynamic accessToken = await getToken();
                         await NfcHce.addApduResponse(
                             port, utf8.encode(accessToken!));
                       } else {
