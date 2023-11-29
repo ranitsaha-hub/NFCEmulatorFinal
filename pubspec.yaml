@@ -32,6 +32,7 @@ dependencies:
     sdk: flutter
   nfc_host_card_emulation: ^1.1.0
   aad_oauth: "^0.4.4"
+  dart_jsonwebtoken: ^2.12.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
