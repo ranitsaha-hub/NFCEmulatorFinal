@@ -3,8 +3,38 @@ import "dart:convert";
 import 'package:aad_oauth/aad_oauth.dart';
 import 'package:aad_oauth/model/config.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'package:encrypt/encrypt.dart';
 import 'package:flutter/material.dart';
 import 'package:nfc_host_card_emulation/nfc_host_card_emulation.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
+
+final guidEmailMapper = {
+  "ranit.saha@ranitdev.onmicrosoft.com": "rsaha043",
+  "debayan.mukherjee@ranitdev.onmicrosoft.com": "dmukherjee005",
+  "hardik.dalmia@ranitdev.onmicrosoft.com": "hdalmia002",
+  "saurabh.kumer@ranitdev.onmicrosoft.com": "skumar466",
+};
+
+final Uint8List aesIV =
+    Uint8List.fromList([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+final Uint8List aesKey = Uint8List.fromList([
+  0x30,
+  0x30,
+  0x30,
+  0x30,
+  0x30,
+  0x30,
+  0x30,
+  0x30,
+  0x30,
+  0x30,
+  0x30,
+  0x30,
+  0x30,
+  0x30,
+  0x30,
+  0x30
+]);
 
 late NfcState _nfcState;
 
@@ -59,11 +89,9 @@ class _MyAppState extends State<MyApp> {
   // change port here
   final port = 0;
   // change data to transmit here
-  final data = [5, 1, 5, 3, 9, 5, 7, 7, 7, 2];
 
   // this will be changed in the NfcHce.stream listen callback
   NfcApduCommand? nfcApduCommand;
-  var typedData = "";
 
   @override
   void initState() {
@@ -74,13 +102,7 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  void onTypeTextInputField(text) {
-    setState(() {
-      typedData = text.toString();
-    });
-  }
-
-  dynamic getToken() async {
+  dynamic getEncryptedToken() async {
     final isUserLoggedin = await oauth.hasCachedAccountInformation;
     if (!isUserLoggedin) {
       final result = await oauth.login();
@@ -95,14 +117,17 @@ class _MyAppState extends State<MyApp> {
     }
     String? accessToken = await oauth.getAccessToken();
     JWT decodedToken = JWT.decode(accessToken!);
-    dynamic newTokenRaw = {
-      'emailAddress': decodedToken.payload['unique_name'],
-      'appId': decodedToken.payload['appid'],
-      'userName': decodedToken.payload['name'],
-    };
-    String jwtToken = JWT(newTokenRaw).sign(SecretKey(
-        "5cCI6InVzZXIiLCJpcGFkZHIiOiIyMC4xOTcuMS44MyIsIm5hbWUiOiJSYW5pdCBTYWhh"));
-    return jwtToken;
+    String userGuid = guidEmailMapper[decodedToken.payload['unique_name']]!;
+    String encryptedString = encryptAES(userGuid);
+    return encryptedString;
+  }
+
+  String encryptAES(String plainText) {
+    final key = encrypt.Key.fromBase64(base64.encode(aesKey));
+    final iv = IV.fromBase64(base64.encode(aesIV));
+    final encrypter = Encrypter(AES(key, mode: AESMode.cbc));
+    Encrypted encrypted = encrypter.encrypt(plainText, iv: iv);
+    return encrypted.base64;
   }
 
   @override
@@ -135,7 +160,7 @@ class _MyAppState extends State<MyApp> {
                   child: ElevatedButton.icon(
                     onPressed: () async {
                       if (apduAdded == false) {
-                        dynamic accessToken = await getToken();
+                        dynamic accessToken = await getEncryptedToken();
                         await NfcHce.addApduResponse(
                             port, utf8.encode(accessToken!));
                       } else {
