@@ -12,7 +12,7 @@ final guidEmailMapper = {
   "ranit.saha@ranitdev.onmicrosoft.com": "rsaha043",
   "debayan.mukherjee@ranitdev.onmicrosoft.com": "dmukherjee005",
   "hardik.dalmia@ranitdev.onmicrosoft.com": "hdalmia002",
-  "saurabh.kumer@ranitdev.onmicrosoft.com": "skumar466",
+  "saurabh.kumar@ranitdev.onmicrosoft.com": "skumar466",
 };
 
 final Uint8List aesIV =
